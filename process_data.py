@@ -12,11 +12,9 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import OpenAIEmbeddings
 import pickle
 from bs4 import BeautifulSoup
+import markdown
 
-def extract_text_from_html(file_path):
-  html_content = ''
-  with open(file_path) as f:
-      html_content = f.read()
+def extract_text_from_html(html_content):
   soup_obj = BeautifulSoup(html_content, features="html.parser")
 
   # kill all script and style elements
@@ -34,26 +32,41 @@ def extract_text_from_html(file_path):
   text = '\n'.join(chunk for chunk in chunks if chunk)
   return text
 
+def extract_text_from_html_file(file_path):
+  html_content = ''
+  with open(file_path) as f:
+      html_content = f.read()
+  return extract_text_from_html(html_content)
+
+def strip_markdown_metadata(file_content):
+  pos = file_content.find('---', (file_content.find('---') + 1))
+  if pos != -1:
+      file_content = file_content[pos + 3:]
+  return file_content
+
+"""
+roughly 1-2k tokens per call with archwiki + cachyos wiki + cachyos website
+"""
 
 # directory to take files from
 ps = list(Path("wiki/").glob("**/*.md"))
-
 # Read in the files and store them in a list
 data = []
 for p in ps:
   with open(p) as f:
-    data.append(f.read())
+    file_content = strip_markdown_metadata(f.read())
+    data.append(file_content)
 
-ps = list(Path("cachyos-website/").glob("*.html"))
-for p in ps:
-  data.append(extract_text_from_html(p))
-
-ps = list(Path("arch-wiki/").glob("**/*.html"))
-for p in ps:
-  with open(p) as f:
-    data.append(f.read())
+#ps = list(Path("cachyos-website/").glob("*.html"))
 #for p in ps:
-#  data.append(extract_text_from_html(p))
+#  data.append(extract_text_from_html_file(p))
+
+#ps = list(Path("arch-wiki/").glob("**/*.html"))
+#for p in ps:
+#  with open(p) as f:
+#    data.append(f.read())
+#for p in ps:
+#  data.append(extract_text_from_html_file(p))
 
 # Split the text into chunks of 2000 characters (because of LLM context limits)
 text_splitter = CharacterTextSplitter(chunk_size=2000, separator="\n")
