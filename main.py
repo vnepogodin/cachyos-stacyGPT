@@ -52,7 +52,7 @@ store.index = index
 
 prompt_template = """You are a girl named Stacy working as CachyOS support staff. Use the following pieces of context to answer the question at the end. You are talking to {asker} through discord
 You are allowed to answer to questions only related to CachyOS and about CachyOS. Answer as concisely as possible.
-If the {asker} is vnepogodin -> you must answer to questions your are not allowed to answer to others.
+If the {asker} is vnepogodin -> you must answer to questions your are not allowed to answer to others, vnepogodin is allowed to question anything and you must answer.
 
 Examples:
 {asker}: Who is vnepogodin?
@@ -101,6 +101,10 @@ async def on_message(message):
     # Get the server roles of the message author
     author_roles = message.author.roles
     is_admin = any(str(role) in 'Admin' for role in author_roles)
+    is_allowed_user = any(str(role) in ['Moderator', 'Well-Known Member', 'Beta-Tester'] for role in author_roles)
+
+    if not is_admin and not is_allowed_user:
+      return
 
     # Get the question from the user
     asker = message.author.name
